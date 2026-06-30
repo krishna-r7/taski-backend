@@ -41,75 +41,77 @@ const user_model_1 = __importStar(require("./user.model"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 class UserController {
-    createUser = async (req, res) => {
-        const { name, email, password, role } = req.body;
-        console.log(req.body);
-        if (!name || !email || !password || !role) {
-            res.status(400).json({ status: 400, message: "All fields are required" });
+    constructor() {
+        this.createUser = async (req, res) => {
+            const { name, email, password, role } = req.body;
+            console.log(req.body);
+            if (!name || !email || !password || !role) {
+                res.status(400).json({ status: 400, message: "All fields are required" });
+                return;
+            }
+            if (!Object.values(user_model_1.UserRole).includes(role)) {
+                res.status(400).json({ status: 400, message: "Invalid role" });
+                return;
+            }
+            const userExists = await user_model_1.default.findOne({ email });
+            if (userExists) {
+                res.status(400).json({ status: 400, message: "User already exists" });
+                return;
+            }
+            const hashedPassword = await bcrypt_1.default.hash(password, 10);
+            const user = new user_model_1.default({
+                name,
+                email,
+                password: hashedPassword,
+                role,
+            });
+            await user.save();
+            const userData = await user_model_1.default.findById(user._id).select("-password");
+            const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
+                expiresIn: "30d",
+            });
+            res.status(200).json({ message: "User created successfully", status: 200, data: { user: userData, token } });
+        };
+        this.loginUser = async (req, res) => {
+            const { email, password } = req.body;
+            if (!email || !password) {
+                res.status(400).json({ status: 400, message: "All fields are required" });
+                return;
+            }
+            const user = await user_model_1.default.findOne({ email });
+            if (!user) {
+                res.status(400).json({ status: 400, message: "User does not exist" });
+                return;
+            }
+            if (!user.isActive) {
+                res.status(400).json({ status: 400, message: "User is not active" });
+                return;
+            }
+            const isPasswordValid = await bcrypt_1.default.compare(password, user.password);
+            if (!isPasswordValid) {
+                res.status(400).json({ status: 400, message: "Invalid password" });
+                return;
+            }
+            const userData = await user_model_1.default.findById(user._id).select("-password");
+            const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
+                expiresIn: "30d",
+            });
+            res.status(200).json({ message: "User logged in successfully", status: 200, data: { user: userData, token } });
+        };
+        this.getAllUsers = async (req, res) => {
+            let { page, limit } = req.query;
+            page = Number(page || 1);
+            limit = Number(limit) || 10;
+            const users = await user_model_1.default.find().select("-password ").skip((page - 1) * limit).limit(limit);
+            const total = await user_model_1.default.countDocuments();
+            res.status(200).json({ status_code: 200, data: users, pagination: {
+                    total,
+                    currentPage: page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                } });
             return;
-        }
-        if (!Object.values(user_model_1.UserRole).includes(role)) {
-            res.status(400).json({ status: 400, message: "Invalid role" });
-            return;
-        }
-        const userExists = await user_model_1.default.findOne({ email });
-        if (userExists) {
-            res.status(400).json({ status: 400, message: "User already exists" });
-            return;
-        }
-        const hashedPassword = await bcrypt_1.default.hash(password, 10);
-        const user = new user_model_1.default({
-            name,
-            email,
-            password: hashedPassword,
-            role,
-        });
-        await user.save();
-        const userData = await user_model_1.default.findById(user._id).select("-password");
-        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "30d",
-        });
-        res.status(200).json({ message: "User created successfully", status: 200, data: { user: userData, token } });
-    };
-    loginUser = async (req, res) => {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            res.status(400).json({ status: 400, message: "All fields are required" });
-            return;
-        }
-        const user = await user_model_1.default.findOne({ email });
-        if (!user) {
-            res.status(400).json({ status: 400, message: "User does not exist" });
-            return;
-        }
-        if (!user.isActive) {
-            res.status(400).json({ status: 400, message: "User is not active" });
-            return;
-        }
-        const isPasswordValid = await bcrypt_1.default.compare(password, user.password);
-        if (!isPasswordValid) {
-            res.status(400).json({ status: 400, message: "Invalid password" });
-            return;
-        }
-        const userData = await user_model_1.default.findById(user._id).select("-password");
-        const token = jsonwebtoken_1.default.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, {
-            expiresIn: "30d",
-        });
-        res.status(200).json({ message: "User logged in successfully", status: 200, data: { user: userData, token } });
-    };
-    getAllUsers = async (req, res) => {
-        let { page, limit } = req.query;
-        page = Number(page || 1);
-        limit = Number(limit) || 10;
-        const users = await user_model_1.default.find().select("-password ").skip((page - 1) * limit).limit(limit);
-        const total = await user_model_1.default.countDocuments();
-        res.status(200).json({ status_code: 200, data: users, pagination: {
-                total,
-                currentPage: page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-            } });
-        return;
-    };
+        };
+    }
 }
 exports.UserController = UserController;

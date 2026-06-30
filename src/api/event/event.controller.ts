@@ -63,7 +63,7 @@ class EventController {
 
   async getOne(req: Request, res: Response) {
 
-    const event = await eventService.getEvent(req.params.id);
+    const event = await eventService.getEvent(req.params.id as string);
     res.status(200).json({ status_code: 200, data: event });
 
   }
@@ -71,7 +71,7 @@ class EventController {
   async update(req: Request, res: Response) {
 
     const event = await eventService.updateEvent(
-      req.params.id,
+      req.params.id as string,
       req.body
     );
 
@@ -85,7 +85,7 @@ class EventController {
 
   async delete(req: Request, res: Response) {
 
-    await eventService.deleteEvent(req.params.id);
+    await eventService.deleteEvent(req.params.id as string);
 
     res.status(200).json({
       status_code: 200,
@@ -97,7 +97,7 @@ class EventController {
   async seats(req: Request, res: Response) {
 
     const seats = await eventService.getSeats(
-      req.params.id
+      req.params.id as string
     );
 
     res.status(200).json({

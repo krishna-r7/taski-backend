@@ -101,7 +101,7 @@ class BookingController {
   ): Promise<void> {
     try {
       const userId = (req as any).user.userId;
-      const bookingId = req.params.id;
+      const bookingId = req.params.id as string;
       const booking = await bookingService.getBookingDetail(userId, bookingId);
       res.status(200).json({
         success: true,
@@ -147,7 +147,7 @@ class BookingController {
   async cancelBooking(req: Request, res: Response) {
     try {
       // const userId = (req as any).user.userId;
-      const bookingId = req.params.id;
+      const bookingId = req.params.id as string;
       const result = await bookingService.cancelBooking(bookingId);
       return res.status(200).json({
         status_code: 200,
@@ -161,7 +161,7 @@ class BookingController {
 
   async refundBooking(req: Request, res: Response) {
     try {
-      const bookingId = req.params.id;
+      const bookingId = req.params.id as string;
       const result = await bookingService.refundBooking(bookingId);
       return res.status(200).json({
         status_code: 200,
