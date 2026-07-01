@@ -32,7 +32,7 @@ class WalletService {
         });
 
         return {
-            key: process.env.RAZORPAY_KEY_ID,
+            key: "rzp_test_T6gCKGVzlDutaO",
             orderId: order.id,
             amount: order.amount,
             currency: order.currency,
